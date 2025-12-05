@@ -29,16 +29,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .init();
 
     // Parse command line arguments
-    let port: u16 = std::env::args()
-        .nth(1)
-        .and_then(|s| {
-            if s.starts_with("--port=") || s.starts_with("--port") {
-                s.split('=').nth(1).or_else(|| std::env::args().nth(2).as_deref())
-            } else {
-                Some(&s[..])
-            }
-            .and_then(|p| p.parse().ok())
-        })
+    let args: Vec<String> = std::env::args().collect();
+    let port: u16 = args.iter()
+        .position(|arg| arg == "--port")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|s| s.parse().ok())
         .unwrap_or(4001);
 
     info!("🚀 Starting CoreLink node on port {}", port);
