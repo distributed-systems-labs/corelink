@@ -21,6 +21,7 @@ pub enum MessagingBehaviourEvent {
 pub struct MessagingBehaviour {
     connected_peers: HashMap<PeerId, Vec<ConnectionId>>,
     pending_handler_messages: VecDeque<(PeerId, Message)>,
+    pending_events: VecDeque<MessagingBehaviourEvent>,
 }
 
 impl MessagingBehaviour {
@@ -28,6 +29,7 @@ impl MessagingBehaviour {
         Self {
             connected_peers: HashMap::new(),
             pending_handler_messages: VecDeque::new(),
+            pending_events: VecDeque::new(),
         }
     }
 
@@ -127,14 +129,34 @@ impl NetworkBehaviour for MessagingBehaviour {
         match event {
             CoreLinkHandlerEvent::MessageReceived(msg) => {
                 info!("📨 Received message from {}: {:?}", peer_id, msg.msg_type);
+                self.pending_events.push_back(MessagingBehaviourEvent::MessageReceived {
+                    from: peer_id,
+                    message: msg,
+                });
             }
             CoreLinkHandlerEvent::MessageSent => {
                 info!("✅ Message sent to {}", peer_id);
+                self.pending_events.push_back(MessagingBehaviourEvent::MessageSent {
+                    to: peer_id,
+                });
+            }
+            CoreLinkHandlerEvent::SendError(error) => {
+                info!("❌ Failed to send message to {}: {}", peer_id, error);
+                self.pending_events.push_back(MessagingBehaviourEvent::SendError {
+                    to: peer_id,
+                    error,
+                });
             }
         }
     }
 
     fn poll(&mut self, _cx: &mut Context) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
+        // First emit any pending events to the swarm
+        if let Some(event) = self.pending_events.pop_front() {
+            return Poll::Ready(ToSwarm::GenerateEvent(event));
+        }
+
+        // Then handle sending messages to handlers
         if let Some((peer, message)) = self.pending_handler_messages.pop_front() {
             return Poll::Ready(ToSwarm::NotifyHandler {
                 peer_id: peer,

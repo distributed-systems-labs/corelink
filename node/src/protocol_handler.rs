@@ -55,6 +55,7 @@ where
 pub enum CoreLinkHandlerEvent {
     MessageReceived(Message),
     MessageSent,
+    SendError(String),
 }
 
 type ReadFuture = Pin<Box<dyn Future<Output = Result<(Stream, Message), io::Error>> + Send>>;
@@ -183,6 +184,7 @@ impl ConnectionHandler for CoreLinkHandler {
                 }
                 Poll::Ready(Err(e)) => {
                     error!("❌ Failed to send message: {}", e);
+                    self.events.push_back(CoreLinkHandlerEvent::SendError(e.to_string()));
                     self.outbound_state = StreamState::Idle;
                 }
                 Poll::Pending => {}
