@@ -1,0 +1,17 @@
+[package]
+name = "corelink-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+ed25519-dalek = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
+libp2p-core = "0.41"
+libp2p-swarm = { workspace = true }
+futures = "0.3"
