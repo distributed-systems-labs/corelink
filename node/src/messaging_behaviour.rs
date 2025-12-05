@@ -1,6 +1,6 @@
 use crate::protocol_handler::{CoreLinkHandler, CoreLinkHandlerEvent};
-use corelink_core::message::{DiscoveryMessage, Message, MessageType};
 use corelink_core::identity::NodeId;
+use corelink_core::message::{DiscoveryMessage, Message, MessageType};
 use libp2p_core::{Endpoint, Multiaddr};
 use libp2p_identity::PeerId;
 use libp2p_swarm::{
@@ -129,23 +129,21 @@ impl NetworkBehaviour for MessagingBehaviour {
         match event {
             CoreLinkHandlerEvent::MessageReceived(msg) => {
                 info!("📨 Received message from {}: {:?}", peer_id, msg.msg_type);
-                self.pending_events.push_back(MessagingBehaviourEvent::MessageReceived {
-                    from: peer_id,
-                    message: msg,
-                });
+                self.pending_events
+                    .push_back(MessagingBehaviourEvent::MessageReceived {
+                        from: peer_id,
+                        message: msg,
+                    });
             }
             CoreLinkHandlerEvent::MessageSent => {
                 info!("✅ Message sent to {}", peer_id);
-                self.pending_events.push_back(MessagingBehaviourEvent::MessageSent {
-                    to: peer_id,
-                });
+                self.pending_events
+                    .push_back(MessagingBehaviourEvent::MessageSent { to: peer_id });
             }
             CoreLinkHandlerEvent::SendError(error) => {
                 info!("❌ Failed to send message to {}: {}", peer_id, error);
-                self.pending_events.push_back(MessagingBehaviourEvent::SendError {
-                    to: peer_id,
-                    error,
-                });
+                self.pending_events
+                    .push_back(MessagingBehaviourEvent::SendError { to: peer_id, error });
             }
         }
     }

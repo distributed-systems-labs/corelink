@@ -190,7 +190,8 @@ impl ConnectionHandler for CoreLinkHandler {
                 }
                 Poll::Ready(Err(e)) => {
                     error!("❌ Failed to send message: {}", e);
-                    self.events.push_back(CoreLinkHandlerEvent::SendError(e.to_string()));
+                    self.events
+                        .push_back(CoreLinkHandlerEvent::SendError(e.to_string()));
                     self.outbound_state = StreamState::Idle;
                 }
                 Poll::Pending => {}
@@ -226,9 +227,15 @@ impl ConnectionHandler for CoreLinkHandler {
             ConnectionEvent::DialUpgradeError(err) => {
                 self.dial_upgrade_failures += 1;
                 if self.dial_upgrade_failures <= 2 {
-                    info!("🔴 Dial upgrade failed (attempt {}): {:?}", self.dial_upgrade_failures, err.error);
+                    info!(
+                        "🔴 Dial upgrade failed (attempt {}): {:?}",
+                        self.dial_upgrade_failures, err.error
+                    );
                 } else {
-                    debug!("Dial upgrade failed (attempt {}): {:?}", self.dial_upgrade_failures, err.error);
+                    debug!(
+                        "Dial upgrade failed (attempt {}): {:?}",
+                        self.dial_upgrade_failures, err.error
+                    );
                 }
 
                 // After 3 failures, stop trying and clear pending messages
@@ -243,9 +250,15 @@ impl ConnectionHandler for CoreLinkHandler {
             ConnectionEvent::ListenUpgradeError(err) => {
                 self.listen_upgrade_failures += 1;
                 if self.listen_upgrade_failures <= 2 {
-                    info!("🔵 Listen upgrade failed (attempt {}): {:?}", self.listen_upgrade_failures, err.error);
+                    info!(
+                        "🔵 Listen upgrade failed (attempt {}): {:?}",
+                        self.listen_upgrade_failures, err.error
+                    );
                 } else {
-                    debug!("Listen upgrade failed (attempt {}): {:?}", self.listen_upgrade_failures, err.error);
+                    debug!(
+                        "Listen upgrade failed (attempt {}): {:?}",
+                        self.listen_upgrade_failures, err.error
+                    );
                 }
             }
             _ => {}
