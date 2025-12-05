@@ -241,7 +241,10 @@ impl ConnectionHandler for CoreLinkHandler {
                 // After 3 failures, stop trying and clear pending messages
                 if self.dial_upgrade_failures >= 3 {
                     if !self.pending_messages.is_empty() {
-                        debug!("Clearing {} pending messages due to repeated failures", self.pending_messages.len());
+                        debug!(
+                            "Clearing {} pending messages due to repeated failures",
+                            self.pending_messages.len()
+                        );
                         self.pending_messages.clear();
                     }
                     self.can_request_outbound = false;
