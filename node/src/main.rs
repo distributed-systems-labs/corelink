@@ -1,3 +1,4 @@
+mod file_transfer;
 mod messaging_behaviour;
 mod protocol_handler;
 
