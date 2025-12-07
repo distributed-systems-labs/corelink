@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     mdns::Config::default(),
                     peer_id,
                 )?,
-                messaging: MessagingBehaviour::new(),
+                messaging: MessagingBehaviour::new()?,
             })
         })?
         .with_swarm_config(|c| {
@@ -128,6 +128,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             }
                             MessagingBehaviourEvent::SendError { to, error } => {
                                 info!("❌ Failed to send message to {}: {}", to, error);
+                            }
+                            MessagingBehaviourEvent::FileOffered { peer, metadata } => {
+                                info!(
+                                    "📁 File offered by {}: {} ({} bytes, {} chunks)",
+                                    peer, metadata.name, metadata.size, metadata.total_chunks
+                                );
+                            }
+                            MessagingBehaviourEvent::ChunkReceived { file_id, progress } => {
+                                info!("📦 Chunk received for {}: {:.1}%", file_id, progress * 100.0);
+                            }
+                            MessagingBehaviourEvent::TransferComplete { file_id } => {
+                                info!("✅ File transfer complete: {}", file_id);
+                            }
+                            MessagingBehaviourEvent::TransferFailed { file_id, reason } => {
+                                info!("❌ File transfer failed {}: {}", file_id, reason);
                             }
                         }
                     }
