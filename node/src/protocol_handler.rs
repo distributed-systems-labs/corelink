@@ -77,6 +77,7 @@ pub struct CoreLinkHandler {
     dial_upgrade_failures: u32,
     listen_upgrade_failures: u32,
     can_request_outbound: bool,
+    outbound_requested: bool,
 }
 
 impl CoreLinkHandler {
@@ -92,6 +93,7 @@ impl CoreLinkHandler {
             dial_upgrade_failures: 0,
             listen_upgrade_failures: 0,
             can_request_outbound: true,  // Start enabled to allow initial requests
+            outbound_requested: false,
         }
     }
 }
@@ -162,8 +164,9 @@ impl ConnectionHandler for CoreLinkHandler {
         match &mut self.outbound_state {
             StreamState::Idle => {
                 if !self.pending_messages.is_empty() && self.can_request_outbound {
-                    if self.outbound_stream.is_none() {
+                    if self.outbound_stream.is_none() && !self.outbound_requested {
                         info!("🔴 Requesting outbound substream");
+                        self.outbound_requested = true;
                         return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
                             protocol: SubstreamProtocol::new(CoreLinkProtocol, ()),
                         });
@@ -221,11 +224,14 @@ impl ConnectionHandler for CoreLinkHandler {
             ConnectionEvent::FullyNegotiatedOutbound(stream) => {
                 info!("🔴 Outbound stream fully negotiated");
                 self.outbound_stream = Some(stream.protocol);
+                self.outbound_requested = false;  // Reset flag - upgrade completed
                 // Allow future outbound requests after one succeeds
                 self.can_request_outbound = true;
             }
             ConnectionEvent::DialUpgradeError(err) => {
                 self.dial_upgrade_failures += 1;
+                self.outbound_requested = false;  // Reset flag - can retry if allowed
+
                 if self.dial_upgrade_failures <= 2 {
                     info!(
                         "🔴 Dial upgrade failed (attempt {}): {:?}",
