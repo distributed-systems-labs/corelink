@@ -91,7 +91,7 @@ impl CoreLinkHandler {
             events: VecDeque::new(),
             dial_upgrade_failures: 0,
             listen_upgrade_failures: 0,
-            can_request_outbound: false,
+            can_request_outbound: true,  // Start enabled to allow initial requests
         }
     }
 }
