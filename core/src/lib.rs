@@ -1,11 +1,13 @@
 pub mod consensus;
 pub mod crypto;
+pub mod file;
 pub mod identity;
 pub mod message;
 pub mod network;
 pub mod protocol;
 pub mod storage;
 
+pub use file::{FileMetadata, FileChunk, FileTransfer};
 pub use identity::{Identity, NodeId};
 pub use message::{Message, MessageType};
 pub use network::{NetworkState, PeerInfo};

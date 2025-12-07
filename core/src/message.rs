@@ -1,4 +1,4 @@
-use crate::NodeId;
+use crate::{NodeId, FileMetadata, FileChunk};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,6 +17,29 @@ pub enum MessageType {
     Consensus(ConsensusMessage),
     Ping,
     Pong,
+    // File transfer protocol messages
+    FileOffer(FileMetadata),
+    FileRequest {
+        file_id: String,
+        requester: NodeId,
+    },
+    ChunkRequest {
+        file_id: String,
+        chunk_index: u32,
+    },
+    ChunkData(FileChunk),
+    ChunkRequestBatch {
+        file_id: String,
+        chunk_indices: Vec<u32>,
+    },
+    TransferComplete {
+        file_id: String,
+        success: bool,
+    },
+    TransferCancel {
+        file_id: String,
+        reason: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
