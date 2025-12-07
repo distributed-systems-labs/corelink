@@ -92,7 +92,7 @@ impl CoreLinkHandler {
             events: VecDeque::new(),
             dial_upgrade_failures: 0,
             listen_upgrade_failures: 0,
-            can_request_outbound: true,  // Start enabled to allow initial requests
+            can_request_outbound: true, // Start enabled to allow initial requests
             outbound_requested: false,
         }
     }
@@ -224,13 +224,13 @@ impl ConnectionHandler for CoreLinkHandler {
             ConnectionEvent::FullyNegotiatedOutbound(stream) => {
                 info!("🔴 Outbound stream fully negotiated");
                 self.outbound_stream = Some(stream.protocol);
-                self.outbound_requested = false;  // Reset flag - upgrade completed
-                // Allow future outbound requests after one succeeds
+                self.outbound_requested = false; // Reset flag - upgrade completed
+                                                 // Allow future outbound requests after one succeeds
                 self.can_request_outbound = true;
             }
             ConnectionEvent::DialUpgradeError(err) => {
                 self.dial_upgrade_failures += 1;
-                self.outbound_requested = false;  // Reset flag - can retry if allowed
+                self.outbound_requested = false; // Reset flag - can retry if allowed
 
                 if self.dial_upgrade_failures <= 2 {
                     info!(
