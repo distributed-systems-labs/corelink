@@ -106,10 +106,7 @@ impl FileTransferManager {
             ));
         }
 
-        info!(
-            "📥 Requesting file: {} from peer {}",
-            metadata.name, peer
-        );
+        info!("📥 Requesting file: {} from peer {}", metadata.name, peer);
 
         // Create FileTransfer to track progress
         let mut transfer = FileTransfer::new(metadata.clone(), output_path.clone());
