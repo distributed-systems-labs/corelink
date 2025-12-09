@@ -8,7 +8,9 @@ use libp2p::{
     SwarmBuilder,
 };
 use std::error::Error;
+use std::path::PathBuf;
 use std::time::Duration;
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::time;
 use tracing::{info, Level};
 
@@ -79,6 +81,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     swarm.listen_on(listen_addr.clone())?;
 
     info!("👂 Listening on {}", listen_addr);
+
+    // Setup stdin for interactive commands
+    let stdin = BufReader::new(tokio::io::stdin());
+    let mut lines = stdin.lines();
+    info!("💡 Commands: 'offer' to share test.txt, 'help' for more");
 
     // Discovery broadcast interval
     let mut discovery_interval = time::interval(Duration::from_secs(10));
@@ -156,6 +163,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     swarm.behaviour_mut().messaging.broadcast_discovery();
                 } else {
                     info!("⏳ No peers connected yet, waiting for discovery...");
+                }
+            }
+            line = lines.next_line() => {
+                if let Ok(Some(cmd)) = line {
+                    match cmd.trim() {
+                        "offer" => {
+                            // Create test file if doesn't exist
+                            let test_file = PathBuf::from("test.txt");
+                            if !test_file.exists() {
+                                std::fs::write(&test_file, b"Hello CoreLink! This is a test file.\nChunk-based transfer protocol working!\nSHA256 verification enabled.")?;
+                                info!("📝 Created test.txt");
+                            }
+                            // Offer file
+                            match swarm.behaviour_mut().messaging.offer_file(&test_file) {
+                                Ok(metadata) => {
+                                    info!("📤 Offering: {} ({} bytes, {} chunks)",
+                                          metadata.name, metadata.size, metadata.total_chunks);
+                                }
+                                Err(e) => info!("❌ Failed: {}", e),
+                            }
+                        }
+                        "help" => {
+                            info!("Commands:");
+                            info!("  offer - Share test.txt with connected peers");
+                            info!("  help  - Show this help");
+                        }
+                        "" => {} // Ignore empty input
+                        _ => info!("Unknown: '{}'. Type 'help'", cmd),
+                    }
                 }
             }
         }
