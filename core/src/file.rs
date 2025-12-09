@@ -142,7 +142,7 @@ pub fn split_file_to_chunks(
         .unwrap_or("unknown")
         .to_string();
 
-    let total_chunks = ((file_size + chunk_size as u64 - 1) / chunk_size as u64) as u32;
+    let total_chunks = file_size.div_ceil(chunk_size as u64) as u32;
     let mut chunks = Vec::with_capacity(total_chunks as usize);
     let mut chunk_hashes = Vec::with_capacity(total_chunks as usize);
     let file_id = uuid::Uuid::new_v4().to_string();
@@ -273,8 +273,12 @@ pub fn write_chunk_to_file(
     // Calculate offset
     let offset = chunk.chunk_index as u64 * metadata.chunk_size as u64;
 
-    // Open file and seek to offset
-    let mut file = OpenOptions::new().create(true).write(true).open(output)?;
+    // Open file and seek to offset (don't truncate - we're writing chunks incrementally)
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(output)?;
 
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(&chunk.data)?;
@@ -343,8 +347,9 @@ mod tests {
 
     #[test]
     fn test_file_transfer_progress() {
+        let temp_file = NamedTempFile::new().unwrap();
         let metadata = FileMetadata::new("test.txt".to_string(), 1000, vec![[0u8; 32]; 10]);
-        let mut transfer = FileTransfer::new(metadata, PathBuf::from("/tmp/test.txt"));
+        let mut transfer = FileTransfer::new(metadata, temp_file.path().to_path_buf());
 
         assert_eq!(transfer.progress, 0.0);
         assert!(!transfer.is_complete());
