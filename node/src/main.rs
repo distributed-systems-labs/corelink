@@ -1,12 +1,16 @@
+mod file_transfer;
 mod messaging_behaviour;
 mod protocol_handler;
 
 use futures::StreamExt;
 use libp2p::{
-    identify, identity, mdns, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr, SwarmBuilder,
+    identify, identity, mdns, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr,
+    SwarmBuilder,
 };
 use std::error::Error;
+use std::path::PathBuf;
 use std::time::Duration;
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::time;
 use tracing::{info, Level};
 
@@ -23,12 +27,13 @@ struct CoreLinkBehaviour {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Tracing setup
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    tracing_subscriber::fmt()
+        .with_max_level(Level::INFO)
+        .init();
 
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
-    let port: u16 = args
-        .iter()
+    let port: u16 = args.iter()
         .position(|arg| arg == "--port")
         .and_then(|i| args.get(i + 1))
         .and_then(|s| s.parse().ok())
@@ -50,20 +55,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
             noise::Config::new,
             yamux::Config::default,
         )?
-        .with_behaviour(
-            |key| -> Result<CoreLinkBehaviour, Box<dyn Error + Send + Sync>> {
-                let peer_id = key.public().to_peer_id();
-                Ok(CoreLinkBehaviour {
-                    ping: ping::Behaviour::new(ping::Config::new()),
-                    identify: identify::Behaviour::new(identify::Config::new(
-                        "/corelink/1.0.0".to_string(),
-                        key.public(),
-                    )),
-                    mdns: mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?,
-                    messaging: MessagingBehaviour::new(),
-                })
-            },
-        )?
+        .with_behaviour(|key| -> Result<CoreLinkBehaviour, Box<dyn Error + Send + Sync>> {
+            let peer_id = key.public().to_peer_id();
+            Ok(CoreLinkBehaviour {
+                ping: ping::Behaviour::new(ping::Config::new()),
+                identify: identify::Behaviour::new(identify::Config::new(
+                    "/corelink/1.0.0".to_string(),
+                    key.public(),
+                )),
+                mdns: mdns::tokio::Behaviour::new(
+                    mdns::Config::default(),
+                    peer_id,
+                )?,
+                messaging: MessagingBehaviour::new()?,
+            })
+        })?
         .with_swarm_config(|c| {
             c.with_idle_connection_timeout(Duration::from_secs(60))
                 .with_per_connection_event_buffer_size(64)
@@ -75,6 +81,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     swarm.listen_on(listen_addr.clone())?;
 
     info!("👂 Listening on {}", listen_addr);
+
+    // Setup stdin for interactive commands
+    let stdin = BufReader::new(tokio::io::stdin());
+    let mut lines = stdin.lines();
+    info!("💡 Commands: 'offer' to share test.txt, 'help' for more");
 
     // Discovery broadcast interval
     let mut discovery_interval = time::interval(Duration::from_secs(10));
@@ -125,6 +136,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             MessagingBehaviourEvent::SendError { to, error } => {
                                 info!("❌ Failed to send message to {}: {}", to, error);
                             }
+                            MessagingBehaviourEvent::FileOffered { peer, metadata } => {
+                                info!(
+                                    "📁 File offered by {}: {} ({} bytes, {} chunks)",
+                                    peer, metadata.name, metadata.size, metadata.total_chunks
+                                );
+                            }
+                            MessagingBehaviourEvent::ChunkReceived { file_id, progress } => {
+                                info!("📦 Chunk received for {}: {:.1}%", file_id, progress * 100.0);
+                            }
+                            MessagingBehaviourEvent::TransferComplete { file_id } => {
+                                info!("✅ File transfer complete: {}", file_id);
+                            }
+                            MessagingBehaviourEvent::TransferFailed { file_id, reason } => {
+                                info!("❌ File transfer failed {}: {}", file_id, reason);
+                            }
                         }
                     }
                     _ => {}
@@ -137,6 +163,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     swarm.behaviour_mut().messaging.broadcast_discovery();
                 } else {
                     info!("⏳ No peers connected yet, waiting for discovery...");
+                }
+            }
+            line = lines.next_line() => {
+                if let Ok(Some(cmd)) = line {
+                    match cmd.trim() {
+                        "offer" => {
+                            // Create test file if doesn't exist
+                            let test_file = PathBuf::from("test.txt");
+                            if !test_file.exists() {
+                                std::fs::write(&test_file, b"Hello CoreLink! This is a test file.\nChunk-based transfer protocol working!\nSHA256 verification enabled.")?;
+                                info!("📝 Created test.txt");
+                            }
+                            // Offer file
+                            match swarm.behaviour_mut().messaging.offer_file(&test_file) {
+                                Ok(metadata) => {
+                                    info!("📤 Offering: {} ({} bytes, {} chunks)",
+                                          metadata.name, metadata.size, metadata.total_chunks);
+                                }
+                                Err(e) => info!("❌ Failed: {}", e),
+                            }
+                        }
+                        "help" => {
+                            info!("Commands:");
+                            info!("  offer - Share test.txt with connected peers");
+                            info!("  help  - Show this help");
+                        }
+                        "" => {} // Ignore empty input
+                        _ => info!("Unknown: '{}'. Type 'help'", cmd),
+                    }
                 }
             }
         }
