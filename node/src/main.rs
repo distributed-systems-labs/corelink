@@ -4,8 +4,7 @@ mod protocol_handler;
 
 use futures::StreamExt;
 use libp2p::{
-    identify, identity, mdns, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr,
-    SwarmBuilder,
+    identify, identity, mdns, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr, SwarmBuilder,
 };
 use std::error::Error;
 use std::path::PathBuf;
@@ -27,13 +26,12 @@ struct CoreLinkBehaviour {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Tracing setup
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
-    let port: u16 = args.iter()
+    let port: u16 = args
+        .iter()
         .position(|arg| arg == "--port")
         .and_then(|i| args.get(i + 1))
         .and_then(|s| s.parse().ok())
@@ -55,21 +53,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
             noise::Config::new,
             yamux::Config::default,
         )?
-        .with_behaviour(|key| -> Result<CoreLinkBehaviour, Box<dyn Error + Send + Sync>> {
-            let peer_id = key.public().to_peer_id();
-            Ok(CoreLinkBehaviour {
-                ping: ping::Behaviour::new(ping::Config::new()),
-                identify: identify::Behaviour::new(identify::Config::new(
-                    "/corelink/1.0.0".to_string(),
-                    key.public(),
-                )),
-                mdns: mdns::tokio::Behaviour::new(
-                    mdns::Config::default(),
-                    peer_id,
-                )?,
-                messaging: MessagingBehaviour::new()?,
-            })
-        })?
+        .with_behaviour(
+            |key| -> Result<CoreLinkBehaviour, Box<dyn Error + Send + Sync>> {
+                let peer_id = key.public().to_peer_id();
+                Ok(CoreLinkBehaviour {
+                    ping: ping::Behaviour::new(ping::Config::new()),
+                    identify: identify::Behaviour::new(identify::Config::new(
+                        "/corelink/1.0.0".to_string(),
+                        key.public(),
+                    )),
+                    mdns: mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?,
+                    messaging: MessagingBehaviour::new()?,
+                })
+            },
+        )?
         .with_swarm_config(|c| {
             c.with_idle_connection_timeout(Duration::from_secs(60))
                 .with_per_connection_event_buffer_size(64)

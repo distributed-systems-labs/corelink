@@ -11,13 +11,9 @@ use tracing::{debug, error, info, warn};
 
 #[derive(Debug, Clone)]
 pub enum TransferStatus {
-    ChunkReceived {
-        progress: f32,
-    },
+    ChunkReceived { progress: f32 },
     TransferComplete,
-    VerificationFailed {
-        chunk_index: u32,
-    },
+    VerificationFailed { chunk_index: u32 },
 }
 
 pub struct FileTransferManager {
