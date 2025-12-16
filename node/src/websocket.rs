@@ -17,10 +17,7 @@ pub enum WsEvent {
     },
 
     /// Peer disconnected from the network
-    PeerDisconnected {
-        peer_id: String,
-        timestamp: u64,
-    },
+    PeerDisconnected { peer_id: String, timestamp: u64 },
 
     /// File offered by a peer
     FileOffered {

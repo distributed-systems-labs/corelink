@@ -4,7 +4,6 @@ mod protocol_handler;
 mod websocket;
 
 use futures::StreamExt;
-use websocket::{start_websocket_server, WsEvent, WsEventSender};
 use libp2p::{
     identify, identity, mdns, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr, SwarmBuilder,
 };
@@ -14,6 +13,7 @@ use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::time;
 use tracing::{info, Level};
+use websocket::{start_websocket_server, WsEvent, WsEventSender};
 
 use messaging_behaviour::{MessagingBehaviour, MessagingBehaviourEvent};
 
