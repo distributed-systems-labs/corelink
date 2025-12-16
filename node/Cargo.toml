@@ -29,5 +29,10 @@ ed25519-dalek = "2.1"
 lru = "0.12"
 tokio-tungstenite = "0.24"
 
+# Web framework
+axum = "0.7"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
 [dev-dependencies]
 tempfile = "3.0"
