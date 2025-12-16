@@ -152,7 +152,7 @@ cat storage/complete/test.txt
                   │
 ┌─────────────────────────────────────────┐
 │           Protocol Layer                │
-│  Custom Messaging (/corelink/msg/1.0.0)│
+│  Custom Messaging (/corelink/msg/1.0.0) │
 └─────────────────────────────────────────┘
                   │
 ┌─────────────────────────────────────────┐
