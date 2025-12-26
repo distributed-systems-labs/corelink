@@ -34,9 +34,9 @@ fn App() -> impl IntoView {
 
 #[component]
 fn HomePage() -> impl IntoView {
-    // Configuration - default to node on port 4001
-    let ws_url = "ws://localhost:8001".to_string();
-    let api_url = "http://localhost:7001".to_string();
+    // Configuration - connect to node on port 4002 to see incoming file transfers
+    let ws_url = "ws://localhost:8002".to_string();
+    let api_url = "http://localhost:7002".to_string();
 
     // API client
     let api = use_corelink_api(api_url.clone());
