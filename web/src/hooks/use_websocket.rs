@@ -71,7 +71,6 @@ pub fn UseWebSocket(
     // Connect to WebSocket on mount
     create_effect(move |_| {
         let url = url.clone();
-        let on_event = on_event.clone();
 
         spawn_local(async move {
             match WebSocket::open(&url) {
