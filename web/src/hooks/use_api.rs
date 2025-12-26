@@ -90,20 +90,4 @@ impl CoreLinkApi {
             .await
             .map_err(|e| e.to_string())
     }
-
-    /// Offer a file
-    pub async fn offer_file(&self, path: String) -> Result<(), String> {
-        let url = format!("{}/api/files/offer", self.base_url);
-
-        let body = serde_json::json!({ "path": path });
-
-        gloo_net::http::Request::post(&url)
-            .json(&body)
-            .map_err(|e| e.to_string())?
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(())
-    }
 }
