@@ -182,8 +182,8 @@ Access the dashboard at `http://localhost:7001` (for node on port 4001) or `http
     │                     │
 WebSocket (8001)      REST API (7001)
     │                     │
-┌───┴─────────────────────┴───────────────┐
-│        CoreLink Node (Rust)             │
+┌───┴─────────────────────┴──────────────┐
+│        CoreLink Node (Rust)            │
 │  ┌─────────────────────────────────┐   │
 │  │  File Transfer Manager          │   │
 │  │  - Chunk-based (64KB)           │   │
@@ -210,7 +210,7 @@ WebSocket (8001)      REST API (7001)
 │  │  - File list                    │   │
 │  │  - Static file serving          │   │
 │  └─────────────────────────────────┘   │
-└─────────────────────────────────────────┘
+└────────────────────────────────────────┘
 ```
 
 ### Core Components
