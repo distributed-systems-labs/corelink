@@ -3,7 +3,6 @@ members = [
     "core",
     "node", 
     "simulator",
-    "web"
 ]
 resolver = "2"
 

@@ -8,39 +8,43 @@
 
 ## Overview
 
-CoreLink enables secure, decentralized file sharing through peer-to-peer mesh networking. Built in Rust with libp2p, it features chunk-based file transfer with SHA256 verification, automatic peer discovery, and a novel Physical Proof of Proximity (PoPI) consensus mechanism (in development).
+CoreLink enables secure, decentralized file sharing through peer-to-peer mesh networking. Built in Rust with libp2p, it features chunk-based file transfer with SHA256 verification, automatic peer discovery, real-time web dashboard, and a novel Physical Proof of Proximity (PoPI) consensus mechanism (in development).
 
-**Current Status:** Core file transfer protocol operational. Consensus and distributed storage in active development.
+**Current Status:** Core file transfer protocol operational with WebSocket/REST API backend and vanilla JavaScript dashboard. Consensus and distributed storage in active development.
 
-## ✨ Features
+## Features
 
-### Working Today ✅
+### Working Today
 - **Peer-to-Peer Networking**: Automatic peer discovery via mDNS
 - **Chunk-Based File Transfer**: 64KB chunks with SHA256 verification
 - **Auto-Download**: Automatic file retrieval when offered by peers
 - **Batch Chunk Requests**: Request 5 chunks at once for efficiency
 - **Progress Tracking**: Real-time transfer progress (0-100%)
-- **LRU Caching**: Efficient chunk serving with 100-chunk cache
+- **LRU Caching**: Efficient chunk serving with 100-chunk cache (6.4MB)
+- **WebSocket Server**: Real-time event broadcasting to web clients
+- **REST API**: HTTP endpoints for stats, peers, files, and health checks
+- **Web Dashboard**: Lightweight vanilla JavaScript interface (10KB total)
 - **CLI Interface**: Simple commands (`offer`, `help`)
 - **Encrypted Connections**: Noise protocol encryption (XX pattern)
 - **Stream Multiplexing**: Yamux for efficient connection usage
+- **Dynamic Port Allocation**: Automatic port assignment (node_port + 3000/4000)
 
 > **Note on Downloads**: Currently, files are downloaded from a single peer at a time, with 5 chunks requested in parallel batches. Future versions will support downloading different chunks from multiple peers simultaneously for faster transfers.
 
-### In Development 🚧
-- **Web Dashboard**: Real-time visualization (Leptos WASM)
+### In Development
 - **Physical Proof of Proximity**: GPS/WiFi/BLE consensus
 - **DHT Storage**: Kademlia-based distributed storage
-- **WebSocket API**: Real-time backend communication
+- **Multi-Node Dashboard**: Side-by-side monitoring of multiple nodes
+- **File Management**: List, cancel, delete, and custom file offering
 
-### Planned 📋
+### Planned
 - **CORE Token**: Utility token for network incentives
 - **DAO Governance**: Community-driven protocol upgrades
 - **Hardware Integration**: LoRa, ESP32, Raspberry Pi
 - **Mobile Apps**: iOS and Android support
 - **Multi-Peer Downloads**: Download different chunks from multiple peers simultaneously
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Rust 1.75 or higher
@@ -72,7 +76,23 @@ cargo run --release --bin corelink-node -- --port 4001
 cargo run --release --bin corelink-node -- --port 4002
 ```
 
-The nodes will automatically discover each other via mDNS and establish encrypted connections.
+**Browser - Open dashboard:**
+```
+http://localhost:7002
+```
+
+The nodes will automatically discover each other via mDNS and establish encrypted connections. The dashboard connects to Node 2 to monitor incoming file transfers.
+
+### Port Configuration
+
+Each node uses three ports derived from the base node port:
+
+| Service | Port Formula | Example (port 4001) |
+|---------|-------------|---------------------|
+| P2P Network | `node_port` | 4001 |
+| REST API | `node_port + 3000` | 7001 |
+| WebSocket | `node_port + 4000` | 8001 |
+| Dashboard | Served via REST API | http://localhost:7001 |
 
 ### Sharing a File
 
@@ -94,6 +114,8 @@ Terminal 2 will automatically:
 4. Assemble the complete file
 5. Save to `./storage/complete/test.txt`
 
+Watch the dashboard in your browser to see real-time transfer progress, including chunk-by-chunk updates and completion status.
+
 ### Verifying the Transfer
 ```bash
 # Check downloaded file
@@ -105,7 +127,7 @@ cat storage/complete/test.txt
 # SHA256 verification enabled.
 ```
 
-## 📖 Usage
+## Usage
 
 ### CLI Commands
 
@@ -113,6 +135,16 @@ cat storage/complete/test.txt
 |---------|-------------|
 | `offer` | Share test.txt with connected peers |
 | `help`  | Show available commands |
+
+### Web Dashboard
+
+The dashboard provides real-time monitoring of:
+- Node statistics (peers, uploads, downloads, uptime)
+- Connected peer list with protocol versions
+- File transfer progress with status indicators
+- Event log showing network activity
+
+Access the dashboard at `http://localhost:7001` (for node on port 4001) or `http://localhost:7002` (for node on port 4002).
 
 ### File Storage Structure
 ```
@@ -124,40 +156,60 @@ cat storage/complete/test.txt
 
 ### Example Session
 ```
-🚀 Starting CoreLink node on port 4001
-🔑 Peer ID: 12D3KooWALh24BMAfj5JaE5XwHcP8N7UukMHPzNiED24oWKihm4e
-📍 Listening on /ip4/0.0.0.0/tcp/4001
-💡 Commands: 'offer' to share test.txt, 'help' for more
+[▶] Starting CoreLink node on port 4001
+[🔑] Peer ID: 12D3KooWALh24BMAfj5JaE5XwHcP8N7UukMHPzNiED24oWKihm4e
+[📍] Listening on /ip4/0.0.0.0/tcp/4001
+[🌐] WebSocket server ready at ws://127.0.0.1:8001
+[🌐] REST API server ready at http://127.0.0.1:7001
+[💡] Commands: 'offer' to share test.txt, 'help' for more
 
-🔍 Discovered peer: 12D3KooWJXt... at /ip4/192.168.1.100/tcp/4002
-✅ Connection established with 12D3KooWJXt...
+[🔍] Discovered peer: 12D3KooWJXt... at /ip4/192.168.1.100/tcp/4002
+[✅] Connection established with 12D3KooWJXt...
 
 > offer
-📝 Created test.txt
-📤 Offering: test.txt (123 bytes, 2 chunks)
+[📝] Created test.txt
+[📤] Offering: test.txt (123 bytes, 2 chunks)
 ```
 
-## 🏗️ Architecture
-
+## Architecture
 ```
 ┌─────────────────────────────────────────┐
-│           Application Layer             │
-│  CLI • Web Dashboard • REST API         │
-└─────────────────────────────────────────┘
-                  │
-┌─────────────────────────────────────────┐
-│           Business Logic                │
-│  FileTransferManager • ConsensusEngine  │
-└─────────────────────────────────────────┘
-                  │
-┌─────────────────────────────────────────┐
-│           Protocol Layer                │
-│  Custom Messaging (/corelink/msg/1.0.0) │
-└─────────────────────────────────────────┘
-                  │
-┌─────────────────────────────────────────┐
-│         Network Layer (libp2p)          │
-│  TCP • Noise • Yamux • mDNS • DHT       │
+│      Web Dashboard (Vanilla JS)         │
+│      10KB total - Real-time monitoring  │
+└──────────────┬──────────────────────────┘
+               │
+    ┌──────────┴──────────┐
+    │                     │
+WebSocket (8001)      REST API (7001)
+    │                     │
+┌───┴─────────────────────┴───────────────┐
+│        CoreLink Node (Rust)             │
+│  ┌─────────────────────────────────┐   │
+│  │  File Transfer Manager          │   │
+│  │  - Chunk-based (64KB)           │   │
+│  │  - SHA256 verification          │   │
+│  │  - LRU cache (100 chunks)       │   │
+│  │  - Auto-download                │   │
+│  └─────────────────────────────────┘   │
+│  ┌─────────────────────────────────┐   │
+│  │  P2P Network (libp2p)           │   │
+│  │  - mDNS discovery               │   │
+│  │  - Noise encryption (XX)        │   │
+│  │  - Yamux multiplexing           │   │
+│  │  - Custom protocol              │   │
+│  └─────────────────────────────────┘   │
+│  ┌─────────────────────────────────┐   │
+│  │  WebSocket Server               │   │
+│  │  - Real-time events             │   │
+│  │  - Broadcast channel            │   │
+│  └─────────────────────────────────┘   │
+│  ┌─────────────────────────────────┐   │
+│  │  REST API (Axum)                │   │
+│  │  - Node stats                   │   │
+│  │  - Peer list                    │   │
+│  │  - File list                    │   │
+│  │  - Static file serving          │   │
+│  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
 ```
 
@@ -170,8 +222,11 @@ cat storage/complete/test.txt
 - **Custom Protocol**: Message types for file transfer and consensus
 - **FileTransferManager**: Coordinates uploads, downloads, and chunk serving
 - **LRU Cache**: Fast chunk retrieval for frequently requested files
+- **WebSocket Server**: Broadcasts real-time events to connected clients
+- **REST API**: HTTP interface for stats, peers, and file management
+- **Vanilla JavaScript Dashboard**: Lightweight web interface (no build tools required)
 
-## 🔧 Development
+## Development
 
 ### Project Structure
 ```
@@ -181,15 +236,22 @@ corelink/
 │       ├── file.rs     # File metadata, chunks, verification
 │       ├── message.rs  # Message protocol definitions
 │       ├── identity.rs # Node identity and cryptography
+│       ├── network.rs  # Network state and peer info
+│       ├── protocol.rs # Protocol codec
 │       └── lib.rs      # Public exports
 ├── node/               # Network node implementation
 │   └── src/
 │       ├── main.rs                  # Entry point and CLI
 │       ├── messaging_behaviour.rs   # Network behavior
 │       ├── protocol_handler.rs      # Stream handling
-│       └── file_transfer.rs         # File transfer logic
-├── web/                # Web dashboard (Leptos)
-│   └── src/
+│       ├── file_transfer.rs         # File transfer logic
+│       ├── websocket.rs             # WebSocket server
+│       └── api.rs                   # REST API endpoints
+├── web/                # Web dashboard
+│   └── public/
+│       ├── index.html  # Dashboard HTML
+│       ├── app.js      # JavaScript application
+│       └── style.css   # Styling
 ├── simulator/          # Network simulator
 └── README.md          # This file
 ```
@@ -231,7 +293,18 @@ cargo test -- --nocapture
 cargo test --release
 ```
 
-## 📊 Performance
+### Web Dashboard Development
+
+The web dashboard is built with vanilla HTML/CSS/JavaScript - no build tools required.
+
+To modify the dashboard:
+1. Edit files in `web/public/`
+2. Refresh browser (changes are instant)
+3. No compilation or bundling needed
+
+The dashboard is served by the REST API server, so it's automatically available at `http://localhost:7001` (or your configured API port).
+
+## Performance
 
 > **Note**: These benchmarks are from controlled testing on a local network (same machine). Real-world internet performance will be significantly lower due to network latency, bandwidth, and routing overhead.
 
@@ -239,10 +312,10 @@ cargo test --release
 
 | File Size | Status | Transfer Time | Throughput | Chunks | Verification |
 |-----------|--------|---------------|------------|--------|--------------|
-| 1 MB      | ✅ Tested | ~0.3 sec   | ~27 Mbps   | 16     | 0.01 sec    |
-| 10 MB     | ✅ Tested | ~2.1 sec   | ~38 Mbps   | 157    | 0.13 sec    |
-| 100 MB    | ✅ Tested | ~18.5 sec  | ~43 Mbps   | 1,563  | 1.25 sec    |
-| 1 GB      | 🚧 Planned | Est. ~3 min | Est. ~43 Mbps | 15,625 | Est. ~13 sec |
+| 1 MB      | ✓ Tested | ~0.3 sec   | ~27 Mbps   | 16     | 0.01 sec    |
+| 10 MB     | ✓ Tested | ~2.1 sec   | ~38 Mbps   | 157    | 0.13 sec    |
+| 100 MB    | ✓ Tested | ~18.5 sec  | ~43 Mbps   | 1,563  | 1.25 sec    |
+| 1 GB      | ▸ Planned | Est. ~3 min | Est. ~43 Mbps | 15,625 | Est. ~13 sec |
 
 **Network Characteristics:**
 - Chunk Size: 64 KB (configurable)
@@ -259,7 +332,7 @@ cargo test --release
 
 *Internet performance will vary significantly. Expect 10-50× slower transfers over residential internet connections.*
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Q4 2025 (Current - December)
 - [x] Core file transfer protocol
@@ -267,8 +340,9 @@ cargo test --release
 - [x] Auto-download functionality
 - [x] Chunk batching (5 chunks per request)
 - [x] CLI interface
-- [ ] Web dashboard integration (in progress)
-- [ ] WebSocket + REST API
+- [x] WebSocket + REST API
+- [x] Vanilla JavaScript dashboard
+- [ ] File enhancements (list, cancel, delete, custom files)
 
 ### Q1 2026
 - [ ] DHT storage layer (Kademlia)
@@ -299,17 +373,17 @@ cargo test --release
 - [ ] Enterprise features
 - [ ] Zero-knowledge proofs
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how you can help:
 
 ### Areas Needing Help
-- 🦀 **Rust Development**: Protocol implementation, optimization
-- 🎨 **Frontend**: Web dashboard (Leptos/WASM)
-- 📝 **Documentation**: Guides, tutorials, API docs
-- 🧪 **Testing**: Network testing, bug reports
-- 🔐 **Security**: Audits, vulnerability reports
-- 🌐 **Translation**: Internationalization
+- **Rust Development**: Protocol implementation, optimization
+- **Frontend**: Dashboard features and improvements
+- **Documentation**: Guides, tutorials, API docs
+- **Testing**: Network testing, bug reports
+- **Security**: Audits, vulnerability reports
+- **Translation**: Internationalization
 
 ### Getting Started
 
@@ -355,13 +429,14 @@ cargo clippy -- -D warnings
 - Update documentation
 - Keep commits focused and atomic
 
-## 📚 Documentation
+## Documentation
 
-- **Architecture Overview**: See [Architecture](#-architecture) above
-- **Project Structure**: See [Development](#-development) above
+- **Architecture Overview**: See [Architecture](#architecture) above
+- **Project Structure**: See [Development](#development) above
 - **API Reference**: Auto-generated with `cargo doc --open`
+- **Web Dashboard API**: REST endpoints documented in `node/src/api.rs`
 
-## 🛡️ Security
+## Security
 
 ### Reporting Vulnerabilities
 
@@ -375,13 +450,13 @@ Instead, please report security issues by:
 We take security seriously and will acknowledge reports promptly.
 
 ### Security Features
-- ✅ Noise protocol encryption (256-bit keys)
-- ✅ SHA256 chunk verification
-- ✅ Ed25519 signatures
-- ✅ Secure temporary file handling
-- 🚧 Physical Proof of Proximity (in development)
-- 📋 End-to-end message encryption (planned)
-- 📋 Zero-knowledge proofs (research phase)
+- ✓ Noise protocol encryption (256-bit keys)
+- ✓ SHA256 chunk verification
+- ✓ Ed25519 signatures
+- ✓ Secure temporary file handling
+- ▸ Physical Proof of Proximity (in development)
+- ▹ End-to-end message encryption (planned)
+- ▹ Zero-knowledge proofs (research phase)
 
 ### Known Limitations
 - mDNS discovery limited to local network
@@ -389,7 +464,7 @@ We take security seriously and will acknowledge reports promptly.
 - No persistence of peer connections across restarts
 - Test mode uses dummy cryptographic keys (production keys coming)
 
-## 🐛 Known Issues
+## Known Issues
 
 - Input buffering may cause double commands in some terminals
 - Windows line ending (CRLF) warnings on git operations
@@ -397,30 +472,32 @@ We take security seriously and will acknowledge reports promptly.
 
 See [GitHub Issues](https://github.com/ChronoCoders/corelink/issues) for full list and workarounds.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **libp2p Team**: For the excellent P2P networking framework
 - **Rust Community**: For outstanding tooling and support
 - **Contributors**: Everyone who has contributed code, documentation, or feedback
 - **Tokio Project**: For async runtime
-- **Leptos Team**: For the reactive web framework
+- **Axum Team**: For the web framework
 
-## 📞 Contact
+## Contact
 
 - **GitHub**: [ChronoCoders/corelink](https://github.com/ChronoCoders/corelink)
 - **Issues**: [GitHub Issues](https://github.com/ChronoCoders/corelink/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ChronoCoders/corelink/discussions)
 
-## 🌟 Star History
+## Star History
 
 If you find CoreLink useful, please consider giving it a star ⭐ on GitHub!
 
 ---
 
-**Built with ❤️ by the CoreLink community**
+**Built with precision by the CoreLink community**
 
 *Last Updated: December 2025*
+
+
