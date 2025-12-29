@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::{StatusCode, Method},
+    http::{Method, StatusCode},
     response::{IntoResponse, Json},
     routing::{get, post},
     Router,
@@ -137,7 +137,10 @@ pub struct OfferFileRequest {
 }
 
 /// Start the REST API server
-pub async fn start_api_server(addr: &str, state: ApiState) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_api_server(
+    addr: &str,
+    state: ApiState,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Configure CORS
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -206,7 +209,7 @@ async fn offer_file_handler(
         Json(serde_json::json!({
             "error": "File offering via API not yet implemented",
             "message": "Use the CLI 'offer' command for now",
-        }))
+        })),
     )
 }
 
@@ -258,7 +261,9 @@ mod tests {
         assert_eq!(files[0].progress, 0.5);
 
         // Update status
-        state.update_file_status("test123", FileStatus::Complete).await;
+        state
+            .update_file_status("test123", FileStatus::Complete)
+            .await;
 
         let files = state.get_files().await;
         assert_eq!(files[0].status, FileStatus::Complete);

@@ -1,0 +1,3 @@
+Hello CoreLink! This is a test file.
+Chunk-based transfer protocol working!
+SHA256 verification enabled.

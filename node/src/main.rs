@@ -4,7 +4,7 @@ mod messaging_behaviour;
 mod protocol_handler;
 mod websocket;
 
-use api::{start_api_server, ApiState, NodeStats, PeerInfo, FileInfo, FileStatus};
+use api::{start_api_server, ApiState, FileInfo, FileStatus, NodeStats, PeerInfo};
 use futures::StreamExt;
 use libp2p::{
     identify, identity, mdns, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr, SwarmBuilder,

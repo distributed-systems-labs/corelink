@@ -1,7 +1,7 @@
+use futures::StreamExt;
+use gloo_net::websocket::{futures::WebSocket, Message};
 use leptos::*;
 use serde::{Deserialize, Serialize};
-use gloo_net::websocket::{futures::WebSocket, Message};
-use futures::StreamExt;
 
 /// WebSocket events from CoreLink node
 #[derive(Debug, Clone, Serialize, Deserialize)]
